@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Social Media Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: #f7f8fa;
+    color: #1f2328;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: #1f2328;
+    color: #e6edf3;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 20px 18px 16px;
+    font-size: 16px;
+    font-weight: 700;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: #3b82d4;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff; font-weight: 800;
+  }
+  .sidebar-nav { flex: 1; padding: 12px 0; }
+  .nav-section { padding: 8px 18px 4px; font-size: 10px; color: #8b949e; letter-spacing: 0.8px; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 18px;
+    cursor: pointer;
+    color: #8b949e;
+    transition: background 0.15s, color 0.15s;
+    font-size: 13.5px;
+  }
+  .nav-item:hover { background: #30363d; color: #e6edf3; }
+  .nav-item.active { background: #21262d; color: #3b82d4; border-left: 3px solid #3b82d4; }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 14px 18px;
+    border-top: 1px solid #30363d;
+    font-size: 12px;
+    color: #8b949e;
+  }
+  .avatar-row { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #3b82d4, #7c5cd8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #fff; font-weight: 700;
+  }
+  .avatar-name { color: #e6edf3; font-weight: 600; font-size: 13px; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 24px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #3b82d4; color: #fff; }
+  .btn-secondary { background: #f7f8fa; color: #1f2328; border: 1px solid #e5e7eb; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Dashboard */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .stat-label { font-size: 12px; color: #57606a; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 800; }
+  .stat-change { font-size: 11px; color: #22c55e; margin-top: 4px; }
+  .stat-change.down { color: #ef4444; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+
+  .platform-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .platform-name { width: 80px; font-size: 12px; color: #57606a; }
+  .bar-wrap { flex: 1; background: #f7f8fa; border-radius: 99px; height: 8px; }
+  .bar-fill { height: 8px; border-radius: 99px; }
+  .bar-twitter { background: #1da1f2; }
+  .bar-instagram { background: #e1306c; }
+  .bar-linkedin { background: #0077b5; }
+  .bar-facebook { background: #1877f2; }
+  .bar-val { font-size: 11px; color: #57606a; width: 44px; text-align: right; }
+
+  .post-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+  }
+  .post-row:last-child { border-bottom: none; }
+  .post-platform {
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 10px; font-weight: 700; color: #fff; white-space: nowrap;
+  }
+  .pt-twitter { background: #1da1f2; }
+  .pt-instagram { background: #e1306c; }
+  .pt-linkedin { background: #0077b5; }
+  .pt-facebook { background: #1877f2; }
+  .post-text { flex: 1; font-size: 12.5px; }
+  .post-meta { font-size: 11px; color: #8b949e; margin-top: 2px; }
+  .post-status { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; }
+  .status-published { background: #dcfce7; color: #16a34a; }
+  .status-scheduled { background: #fef9c3; color: #ca8a04; }
+  .status-draft { background: #f7f8fa; color: #57606a; }
+
+  /* Compose */
+  .compose-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+  .compose-main { display: flex; flex-direction: column; gap: 16px; }
+  .field-label { font-size: 12px; font-weight: 600; color: #57606a; margin-bottom: 6px; display: block; }
+  .textarea {
+    width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 12px 14px; font-family: inherit; font-size: 13.5px;
+    resize: vertical; min-height: 120px; color: #1f2328;
+    background: #fff; outline: none; transition: border-color 0.15s;
+  }
+  .textarea:focus { border-color: #3b82d4; }
+  .char-count { font-size: 11px; color: #8b949e; text-align: right; margin-top: 4px; }
+  .input {
+    width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 9px 12px; font-family: inherit; font-size: 13.5px;
+    color: #1f2328; background: #fff; outline: none; transition: border-color 0.15s;
+  }
+  .input:focus { border-color: #3b82d4; }
+
+  .platform-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .platform-check {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    border: 2px solid #e5e7eb; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: #57606a;
+    transition: all 0.15s; user-select: none;
+  }
+  .platform-check.sel-twitter  { border-color: #1da1f2; background: #e8f5fe; color: #1da1f2; }
+  .platform-check.sel-instagram { border-color: #e1306c; background: #fde8ef; color: #e1306c; }
+  .platform-check.sel-linkedin  { border-color: #0077b5; background: #e5f3fb; color: #0077b5; }
+  .platform-check.sel-facebook  { border-color: #1877f2; background: #e8f0fe; color: #1877f2; }
+
+  .tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tone-btn {
+    padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px;
+    cursor: pointer; font-size: 12px; font-weight: 600; color: #57606a;
+    text-align: center; background: #fff; transition: all 0.15s;
+  }
+  .tone-btn.active { border-color: #3b82d4; background: #eff6ff; color: #3b82d4; }
+
+  .preview-card {
+    background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-top: 8px;
+  }
+  .preview-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .preview-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #3b82d4;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700;
+  }
+  .preview-name { font-size: 13px; font-weight: 700; }
+  .preview-handle { font-size: 11px; color: #8b949e; }
+  .preview-body { font-size: 13px; color: #1f2328; line-height: 1.5; }
+  .preview-image {
+    width: 100%; height: 140px; border-radius: 8px; background: #e5e7eb; margin-top: 10px;
+    display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 12px;
+  }
+  .preview-actions { display: flex; gap: 14px; margin-top: 12px; }
+  .preview-action { font-size: 11px; color: #8b949e; }
+
+  .ai-row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .ai-chip {
+    padding: 5px 10px; border-radius: 99px; border: 1px solid #7c5cd8;
+    background: #f5f3ff; color: #7c5cd8; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .ai-chip:hover { background: #ede9fe; }
+
+  /* Schedule */
+  .schedule-table { width: 100%; border-collapse: collapse; }
+  .schedule-table th {
+    text-align: left; font-size: 11px; font-weight: 700; color: #57606a;
+    padding: 8px 12px; border-bottom: 2px solid #e5e7eb; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .schedule-table td { padding: 11px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .schedule-table tr:last-child td { border-bottom: none; }
+  .schedule-table tr:hover td { background: #fafafa; }
+
+  /* Analytics */
+  .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-placeholder {
+    background: #f7f8fa; border: 1px dashed #e5e7eb;
+    border-radius: 8px; height: 160px;
+    display: flex; align-items: flex-end; padding: 12px; gap: 6px;
+  }
+  .bar-chart-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .bar-chart-bar { width: 100%; border-radius: 4px 4px 0 0; background: #3b82d4; min-height: 4px; }
+  .bar-chart-label { font-size: 10px; color: #8b949e; }
+  .metric-list { display: flex; flex-direction: column; gap: 10px; }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { font-size: 13px; color: #57606a; }
+  .metric-val { font-size: 14px; font-weight: 700; }
+
+  /* AI Agent Chat */
+  .agent-wrap { display: grid; grid-template-columns: 1fr 280px; gap: 16px; height: calc(100vh - 110px); }
+  .chat-window {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .chat-header {
+    padding: 14px 18px; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .agent-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
+  .chat-title { font-size: 14px; font-weight: 700; }
+  .chat-sub { font-size: 11px; color: #8b949e; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { display: flex; gap: 10px; max-width: 82%; }
+  .msg.agent { align-self: flex-start; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+  }
+  .msg-avatar.agent-av { background: #7c5cd8; color: #fff; }
+  .msg-avatar.user-av  { background: #3b82d4; color: #fff; }
+  .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+  .msg.agent .msg-bubble { background: #f7f8fa; border: 1px solid #e5e7eb; border-top-left-radius: 2px; }
+  .msg.user  .msg-bubble { background: #3b82d4; color: #fff; border-top-right-radius: 2px; }
+  .chat-input-row { padding: 14px 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 9px 12px; font-family: inherit; font-size: 13px;
+    outline: none; color: #1f2328; background: #fff;
+  }
+  .chat-input:focus { border-color: #3b82d4; }
+
+  .agent-tools { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; }
+  .tool-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid #e5e7eb; margin-bottom: 8px; transition: background 0.15s;
+  }
+  .tool-item:hover { background: #f7f8fa; }
+  .tool-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .tool-name { font-size: 13px; font-weight: 600; }
+  .tool-desc { font-size: 11px; color: #8b949e; }
+
+  /* Settings */
+  .settings-grid { display: grid; grid-template-columns: 200px 1fr; gap: 20px; }
+  .settings-nav { display: flex; flex-direction: column; gap: 2px; }
+  .settings-nav-item { padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #57606a; }
+  .settings-nav-item.active { background: #eff6ff; color: #3b82d4; font-weight: 600; }
+  .settings-nav-item:hover:not(.active) { background: #f7f8fa; }
+  .settings-section { display: flex; flex-direction: column; gap: 16px; }
+  .settings-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; gap: 20px;
+  }
+  .settings-label { font-size: 13.5px; font-weight: 600; }
+  .settings-sub { font-size: 12px; color: #57606a; margin-top: 2px; }
+  .toggle {
+    width: 40px; height: 22px; background: #e5e7eb; border-radius: 99px;
+    position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+  }
+  .toggle.on { background: #3b82d4; }
+  .toggle-knob {
+    width: 16px; height: 16px; background: #fff; border-radius: 50%;
+    position: absolute; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle.on .toggle-knob { left: 21px; }
+  .connect-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 16px; display: flex; align-items: center; gap: 14px;
+  }
+  .connect-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .ci-twitter   { background: #e8f5fe; }
+  .ci-instagram { background: #fde8ef; }
+  .ci-linkedin  { background: #e5f3fb; }
+  .ci-facebook  { background: #e8f0fe; }
+  .connect-info { flex: 1; }
+  .connect-name { font-size: 13.5px; font-weight: 700; }
+  .connect-status { font-size: 11px; color: #22c55e; font-weight: 600; }
+  .connect-status.disc { color: #8b949e; }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing span {
+    width: 6px; height: 6px; background: #8b949e; border-radius: 50%;
+    display: inline-block; animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">SM</div>
+      SocialAgent
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">&#9680;</span> Dashboard</div>
+      <div class="nav-item" data-panel="compose"><span class="nav-icon">&#9998;</span> Compose</div>
+      <div class="nav-item" data-panel="schedule"><span class="nav-icon">&#128197;</span> Schedule</div>
+      <div class="nav-section">Insights</div>
+      <div class="nav-item" data-panel="analytics"><span class="nav-icon">&#128200;</span> Analytics</div>
+      <div class="nav-section">AI</div>
+      <div class="nav-item" data-panel="agent"><span class="nav-icon">&#129302;</span> AI Agent</div>
+      <div class="nav-section">Config</div>
+      <div class="nav-item" data-panel="settings"><span class="nav-icon">&#9881;</span> Settings</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar-row">
+        <div class="avatar">JD</div>
+        <div>
+          <div class="avatar-name">Jane Doe</div>
+          <div>Pro Plan</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <button class="btn btn-secondary btn-sm">&#8635; Refresh</button>
+        <button class="btn btn-primary btn-sm" id="new-post-btn">+ New Post</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Followers</div>
+            <div class="stat-value">48.2K</div>
+            <div class="stat-change">&#9650; 3.4% this week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Posts Published</div>
+            <div class="stat-value">124</div>
+            <div class="stat-change">&#9650; 12 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg. Engagement</div>
+            <div class="stat-value">5.8%</div>
+            <div class="stat-change">&#9650; 0.6% vs last month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Scheduled Posts</div>
+            <div class="stat-value">9</div>
+            <div class="stat-change down">&#9660; 2 fewer than last week</div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Platform Reach</div>
+            <div class="platform-row">
+              <span class="platform-name">Twitter/X</span>
+              <div class="bar-wrap"><div class="bar-fill bar-twitter" style="width:72%"></div></div>
+              <span class="bar-val">18.4K</span>
+            </div>
+            <div class="platform-row">
+              <span class="platform-name">Instagram</span>
+              <div class="bar-wrap"><div class="bar-fill bar-instagram" style="width:88%"></div></div>
+              <span class="bar-val">22.6K</span>
+            </div>
+            <div class="platform-row">
+              <span class="platform-name">LinkedIn</span>
+              <div class="bar-wrap"><div class="bar-fill bar-linkedin" style="width:28%"></div></div>
+              <span class="bar-val">4.1K</span>
+            </div>
+            <div class="platform-row">
+              <span class="platform-name">Facebook</span>
+              <div class="bar-wrap"><div class="bar-fill bar-facebook" style="width:12%"></div></div>
+              <span class="bar-val">3.1K</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent Posts</div>
+            <div class="post-row">
+              <span class="post-platform pt-twitter">Twitter</span>
+              <div>
+                <div class="post-text">Just launched our new product! Check it out &#128640; #launch</div>
+                <div class="post-meta">Today, 09:00 AM &middot; 234 likes</div>
+              </div>
+              <span class="post-status status-published">Published</span>
+            </div>
+            <div class="post-row">
+              <span class="post-platform pt-instagram">IG</span>
+              <div>
+                <div class="post-text">Behind the scenes of our team building the future...</div>
+                <div class="post-meta">Yesterday, 02:00 PM &middot; 1.2K likes</div>
+              </div>
+              <span class="post-status status-published">Published</span>
+            </div>
+            <div class="post-row">
+              <span class="post-platform pt-linkedin">LinkedIn</span>
+              <div>
+                <div class="post-text">Excited to share our Q3 results — record growth!</div>
+                <div class="post-meta">Tomorrow, 10:00 AM</div>
+              </div>
+              <span class="post-status status-scheduled">Scheduled</span>
+            </div>
+            <div class="post-row">
+              <span class="post-platform pt-facebook">FB</span>
+              <div>
+                <div class="post-text">Join our upcoming webinar on social media strategy...</div>
+                <div class="post-meta">Draft &middot; Not scheduled</div>
+              </div>
+              <span class="post-status status-draft">Draft</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPOSE -->
+      <div class="panel" id="panel-compose">
+        <div class="compose-grid">
+          <div class="compose-main">
+            <div class="card">
+              <div class="card-title">Create Post</div>
+              <label class="field-label">Platforms</label>
+              <div class="platform-checks">
+                <div class="platform-check sel-twitter" data-platform="twitter">&#64; Twitter/X</div>
+                <div class="platform-check" data-platform="instagram">&#9823; Instagram</div>
+                <div class="platform-check" data-platform="linkedin">in LinkedIn</div>
+                <div class="platform-check" data-platform="facebook">f Facebook</div>
+              </div>
+            </div>
+            <div class="card">
+              <label class="field-label">Post Content</label>
+              <textarea class="textarea" id="post-content" placeholder="Write your post here... or use AI chips below &#10024;" maxlength="280"></textarea>
+              <div class="char-count"><span id="char-used">0</span> / 280</div>
+              <label class="field-label" style="margin-top:12px;">AI Suggestions</label>
+              <div class="ai-row">
+                <span class="ai-chip" data-prompt="product launch">&#10024; Product Launch</span>
+                <span class="ai-chip" data-prompt="engagement question">&#128172; Ask Audience</span>
+                <span class="ai-chip" data-prompt="motivational quote">&#128170; Motivational</span>
+                <span class="ai-chip" data-prompt="behind the scenes">&#127916; Behind Scenes</span>
+                <span class="ai-chip" data-prompt="announcement">&#128227; Announcement</span>
+              </div>
+            </div>
+            <div class="card">
+              <label class="field-label">Schedule Time</label>
+              <input type="datetime-local" class="input" id="schedule-time" style="margin-bottom:10px;"/>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary" style="flex:1;" id="save-draft-btn">Save Draft</button>
+                <button class="btn btn-primary" style="flex:1;" id="schedule-btn">Schedule Post</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="card">
+              <div class="card-title">Tone &amp; Style</div>
+              <div class="tone-grid">
+                <div class="tone-btn active" data-tone="professional">&#128084; Professional</div>
+                <div class="tone-btn" data-tone="casual">&#128513; Casual</div>
+                <div class="tone-btn" data-tone="humorous">&#129315; Humorous</div>
+                <div class="tone-btn" data-tone="inspirational">&#127775; Inspirational</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Live Preview</div>
+              <div class="preview-card">
+                <div class="preview-header">
+                  <div class="preview-avatar">JD</div>
+                  <div>
+                    <div class="preview-name">Jane Doe</div>
+                    <div class="preview-handle">&#64;janedoe &middot; just now</div>
+                  </div>
+                </div>
+                <div class="preview-body" id="preview-body">Your post preview will appear here as you type...</div>
+                <div class="preview-image">&#128247; No image attached</div>
+                <div class="preview-actions">
+                  <span class="preview-action">&#128172; 0</span>
+                  <span class="preview-action">&#8635; 0</span>
+                  <span class="preview-action">&#10084; 0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDULE -->
+      <div class="panel" id="panel-schedule">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="card-title" style="margin:0;">Upcoming Posts</div>
+            <button class="btn btn-primary btn-sm" id="add-schedule-btn">+ Add Post</button>
+          </div>
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th>Content</th><th>Platform</th><th>Scheduled</th><th>Status</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-tbody">
+              <tr>
+                <td>Excited to share our Q3 results — record growth!</td>
+                <td><span class="post-platform pt-linkedin">LinkedIn</span></td>
+                <td>Dec 20, 10:00 AM</td>
+                <td><span class="post-status status-scheduled">Scheduled</span></td>
+                <td><button class="btn btn-secondary btn-sm">Edit</button></td>
+              </tr>
+              <tr>
+                <td>New year, new goals! What are you working on in 2025?</td>
+                <td><span class="post-platform pt-twitter">Twitter</span></td>
+                <td>Jan 1, 12:00 PM</td>
+                <td><span class="post-status status-scheduled">Scheduled</span></td>
+                <td><button class="btn btn-secondary btn-sm">Edit</button></td>
+              </tr>
+              <tr>
+                <td>Behind the scenes of our team...</td>
+                <td><span class="post-platform pt-instagram">IG</span></td>
+                <td>Dec 22, 06:00 PM</td>
+                <td><span class="post-status status-scheduled">Scheduled</span></td>
+                <td><button class="btn btn-secondary btn-sm">Edit</button></td>
+              </tr>
+              <tr>
+                <td>Join our upcoming webinar on social media strategy</td>
+                <td><span class="post-platform pt-facebook">FB</span></td>
+                <td>Not set</td>
+                <td><span class="post-status status-draft">Draft</span></td>
+                <td><button class="btn btn-secondary btn-sm">Edit</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="panel" id="panel-analytics">
+        <div class="stats-grid" style="margin-bottom:20px;">
+          <div class="stat-card">
+            <div class="stat-label">Total Impressions</div>
+            <div class="stat-value">214K</div>
+            <div class="stat-change">&#9650; 8.1% this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Link Clicks</div>
+            <div class="stat-value">3,842</div>
+            <div class="stat-change">&#9650; 22% vs last month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">New Followers</div>
+            <div class="stat-value">+1,204</div>
+            <div class="stat-change">&#9650; 5.2% growth rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Top Platform</div>
+            <div class="stat-value" style="font-size:18px;">Instagram</div>
+            <div class="stat-change">62% of total reach</div>
+          </div>
+        </div>
+        <div class="analytics-grid">
+          <div class="card">
+            <div class="card-title">Weekly Engagement (Last 7 Days)</div>
+            <div class="chart-placeholder" id="engagement-chart"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Top Performing Posts</div>
+            <div class="metric-list">
+              <div class="metric-row">
+                <div><div style="font-size:13px;font-weight:600;">Product Launch Tweet</div><div style="font-size:11px;color:#8b949e;">Twitter &middot; Dec 18</div></div>
+                <div class="metric-val">12.4K reach</div>
+              </div>
+              <div class="metric-row">
+                <div><div style="font-size:13px;font-weight:600;">Team BTS Reel</div><div style="font-size:11px;color:#8b949e;">Instagram &middot; Dec 15</div></div>
+                <div class="metric-val">9.8K reach</div>
+              </div>
+              <div class="metric-row">
+                <div><div style="font-size:13px;font-weight:600;">Q3 Results Post</div><div style="font-size:11px;color:#8b949e;">LinkedIn &middot; Dec 10</div></div>
+                <div class="metric-val">4.2K reach</div>
+              </div>
+              <div class="metric-row">
+                <div><div style="font-size:13px;font-weight:600;">Webinar Invite</div><div style="font-size:11px;color:#8b949e;">Facebook &middot; Dec 8</div></div>
+                <div class="metric-val">2.1K reach</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Audience Demographics</div>
+            <div class="metric-list">
+              <div class="metric-row"><span class="metric-label">18–24 years</span><span class="metric-val">18%</span></div>
+              <div class="metric-row"><span class="metric-label">25–34 years</span><span class="metric-val">41%</span></div>
+              <div class="metric-row"><span class="metric-label">35–44 years</span><span class="metric-val">27%</span></div>
+              <div class="metric-row"><span class="metric-label">45+ years</span><span class="metric-val">14%</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Engagement by Type</div>
+            <div class="metric-list">
+              <div class="metric-row"><span class="metric-label">Likes</span><span class="metric-val">68%</span></div>
+              <div class="metric-row"><span class="metric-label">Comments</span><span class="metric-val">12%</span></div>
+              <div class="metric-row"><span class="metric-label">Shares / Retweets</span><span class="metric-val">14%</span></div>
+              <div class="metric-row"><span class="metric-label">Saves / Bookmarks</span><span class="metric-val">6%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI AGENT -->
+      <div class="panel" id="panel-agent">
+        <div class="agent-wrap">
+          <div class="chat-window">
+            <div class="chat-header">
+              <div class="agent-dot"></div>
+              <div>
+                <div class="chat-title">SocialAgent AI</div>
+                <div class="chat-sub">Powered by your connected platforms</div>
+              </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+              <div class="msg agent">
+                <div class="msg-avatar agent-av">AI</div>
+                <div class="msg-bubble">
+                  Hi! I'm your Social Media Agent. I can help you <strong>write posts</strong>, <strong>suggest hashtags</strong>, <strong>analyze performance</strong>, or <strong>plan a content strategy</strong>. What would you like to do today?
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input class="chat-input" id="chat-input" type="text" placeholder="Ask me anything about your social media..." />
+              <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="agent-tools">
+              <div class="card-title">Quick Actions</div>
+              <div class="tool-item" data-msg="Generate a post for Instagram about a new product launch with emojis and hashtags.">
+                <div class="tool-icon ci-instagram">&#128247;</div>
+                <div><div class="tool-name">Generate IG Post</div><div class="tool-desc">Product launch with hashtags</div></div>
+              </div>
+              <div class="tool-item" data-msg="Suggest 10 trending hashtags for my tech startup Twitter account.">
+                <div class="tool-icon ci-twitter">&#35;</div>
+                <div><div class="tool-name">Suggest Hashtags</div><div class="tool-desc">For Twitter/X &amp; Instagram</div></div>
+              </div>
+              <div class="tool-item" data-msg="Create a 7-day content calendar for a SaaS product social media strategy.">
+                <div class="tool-icon" style="background:#f5f3ff;">&#128197;</div>
+                <div><div class="tool-name">Content Calendar</div><div class="tool-desc">7-day AI-planned schedule</div></div>
+              </div>
+              <div class="tool-item" data-msg="Analyze my recent posts and tell me the best time to post for maximum engagement.">
+                <div class="tool-icon" style="background:#fefce8;">&#128200;</div>
+                <div><div class="tool-name">Best Time to Post</div><div class="tool-desc">Engagement optimization</div></div>
+              </div>
+              <div class="tool-item" data-msg="Write a professional LinkedIn post about company culture and team growth.">
+                <div class="tool-icon ci-linkedin">in</div>
+                <div><div class="tool-name">LinkedIn Article</div><div class="tool-desc">Professional thought leadership</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel" id="panel-settings">
+        <div class="settings-grid">
+          <div>
+            <div class="card-title" style="margin-bottom:10px;">Settings</div>
+            <div class="settings-nav">
+              <div class="settings-nav-item active" data-tab="accounts">Connected Accounts</div>
+              <div class="settings-nav-item" data-tab="notifications">Notifications</div>
+              <div class="settings-nav-item" data-tab="aiprefs">AI Preferences</div>
+              <div class="settings-nav-item" data-tab="profile">Profile</div>
+            </div>
+          </div>
+          <div>
+            <div id="settings-accounts" class="settings-section">
+              <div class="card-title">Connected Platforms</div>
+              <div class="connect-card">
+                <div class="connect-icon ci-twitter">X</div>
+                <div class="connect-info"><div class="connect-name">Twitter / X</div><div class="connect-status">&#9679; Connected as @janedoe</div></div>
+                <button class="btn btn-secondary btn-sm">Disconnect</button>
+              </div>
+              <div class="connect-card" style="margin-top:10px;">
+                <div class="connect-icon ci-instagram">IG</div>
+                <div class="connect-info"><div class="connect-name">Instagram</div><div class="connect-status">&#9679; Connected as @janedoe.official</div></div>
+                <button class="btn btn-secondary btn-sm">Disconnect</button>
+              </div>
+              <div class="connect-card" style="margin-top:10px;">
+                <div class="connect-icon ci-linkedin">in</div>
+                <div class="connect-info"><div class="connect-name">LinkedIn</div><div class="connect-status">&#9679; Connected as Jane Doe</div></div>
+                <button class="btn btn-secondary btn-sm">Disconnect</button>
+              </div>
+              <div class="connect-card" style="margin-top:10px;">
+                <div class="connect-icon ci-facebook">f</div>
+                <div class="connect-info"><div class="connect-name">Facebook</div><div class="connect-status disc">&#9679; Not connected</div></div>
+                <button class="btn btn-primary btn-sm">Connect</button>
+              </div>
+            </div>
+
+            <div id="settings-notifications" class="settings-section" style="display:none;">
+              <div class="card-title">Notification Preferences</div>
+              <div class="settings-row">
+                <div><div class="settings-label">Post Published</div><div class="settings-sub">Notify when a scheduled post goes live</div></div>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-label">Engagement Alerts</div><div class="settings-sub">Alert when posts exceed engagement threshold</div></div>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-label">Weekly Report</div><div class="settings-sub">Receive a weekly analytics summary email</div></div>
+                <div class="toggle"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-label">AI Recommendations</div><div class="settings-sub">Periodic AI-generated content suggestions</div></div>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+            </div>
+
+            <div id="settings-aiprefs" class="settings-section" style="display:none;">
+              <div class="card-title">AI Preferences</div>
+              <div class="settings-row">
+                <div><div class="settings-label">Auto-generate Hashtags</div><div class="settings-sub">AI will suggest hashtags for every post</div></div>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-label">Smart Scheduling</div><div class="settings-sub">AI picks the best time to publish</div></div>
+                <div class="toggle on"><div class="toggle-knob"></div></div>
+              </div>
+              <div class="settings-row">
+                <div><div class="settings-label">Tone Matching</div><div class="settings-sub">Adapt content tone per platform automatically</div></div>
+                <div class="toggle"><div class="toggle-knob"></div></div>
+              </div>
+              <div>
+                <label class="field-label">Brand Voice</label>
+                <textarea class="textarea" style="min-height:80px;" placeholder="e.g. Friendly, innovative SaaS company targeting growth-stage startups..."></textarea>
+              </div>
+            </div>
+
+            <div id="settings-profile" class="settings-section" style="display:none;">
+              <div class="card-title">Profile</div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div><label class="field-label">Full Name</label><input class="input" value="Jane Doe"/></div>
+                <div><label class="field-label">Email</label><input class="input" value="jane@example.com" type="email"/></div>
+                <div><label class="field-label">Company / Brand</label><input class="input" value="AcmeCo"/></div>
+                <div><label class="field-label">Plan</label><input class="input" value="Pro Plan" readonly style="background:#f7f8fa;"/></div>
+                <button class="btn btn-primary" style="align-self:flex-start;">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<footer style="text-align:center;padding:12px;font-size:12px;color:#8b949e;border-top:1px solid #e5e7eb;background:#fff;">
+  Made with IBM Bob
+</footer>
+
+<script>
+// ── Navigation ──
+const navItems = document.querySelectorAll('.nav-item');
+const panels   = document.querySelectorAll('.panel');
+const topbarTitle = document.getElementById('topbar-title');
+const titles = { dashboard:'Dashboard', compose:'Compose', schedule:'Schedule', analytics:'Analytics', agent:'AI Agent', settings:'Settings' };
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    const t = item.dataset.panel;
+    navItems.forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    panels.forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + t).classList.add('active');
+    topbarTitle.textContent = titles[t] || t;
+    if (t === 'analytics') renderChart();
+  });
+});
+
+document.getElementById('new-post-btn').addEventListener('click', () => {
+  document.querySelector('[data-panel="compose"]').click();
+});
+
+document.getElementById('add-schedule-btn').addEventListener('click', () => {
+  document.querySelector('[data-panel="compose"]').click();
+});
+
+// ── Platform checks ──
+document.querySelectorAll('.platform-check').forEach(pc => {
+  pc.addEventListener('click', () => {
+    const p = pc.dataset.platform;
+    pc.classList.toggle('sel-' + p);
+  });
+});
+
+// ── Tone buttons ──
+document.querySelectorAll('.tone-btn').forEach(tb => {
+  tb.addEventListener('click', () => {
+    document.querySelectorAll('.tone-btn').forEach(t => t.classList.remove('active'));
+    tb.classList.add('active');
+  });
+});
+
+// ── Live preview ──
+const postContent = document.getElementById('post-content');
+const previewBody = document.getElementById('preview-body');
+const charUsed    = document.getElementById('char-used');
+postContent.addEventListener('input', () => {
+  const v = postContent.value;
+  charUsed.textContent = v.length;
+  previewBody.textContent = v || 'Your post preview will appear here as you type...';
+});
+
+// ── AI Chips ──
+const aiSuggestions = {
+  'product launch':       '&#128640; Thrilled to announce the launch of our newest product! We built it to solve real problems and we can\'t wait for you to try it. Link in bio! #ProductLaunch #Startup #Innovation',
+  'engagement question':  'We want to hear from you! &#128071; What\'s the ONE tool you simply cannot work without in 2024? Drop it in the comments! #CommunityQuestion #Productivity',
+  'motivational quote':   'Success is not final; failure is not fatal — it\'s the courage to continue that counts. &#128170; Keep pushing forward. #MondayMotivation #Growth',
+  'behind the scenes':    'Ever wonder what goes on behind the scenes? &#127916; Here\'s a sneak peek into our team\'s creative process. Real people, real passion. #BehindTheScenes #TeamWork',
+  'announcement':         '&#128227; BIG NEWS! We have an exciting announcement we\'ve been working on for months. Something amazing is coming your way very soon. &#128064; #StayTuned #ComingSoon'
+};
+document.querySelectorAll('.ai-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const text = aiSuggestions[chip.dataset.prompt] || '';
+    // strip HTML entities for textarea
+    const el = document.createElement('textarea');
+    el.innerHTML = text;
+    const plain = el.value;
+    postContent.value = plain;
+    charUsed.textContent = plain.length;
+    previewBody.textContent = plain;
+  });
+});
+
+// ── Schedule ──
+document.getElementById('schedule-btn').addEventListener('click', () => {
+  const content = postContent.value.trim();
+  const time    = document.getElementById('schedule-time').value;
+  if (!content) { alert('Please enter post content.'); return; }
+  if (!time)    { alert('Please select a schedule time.'); return; }
+  const d = new Date(time);
+  const fmt = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ', ' + d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const selected = [...document.querySelectorAll('.platform-check')].filter(pc => pc.classList.contains('sel-' + pc.dataset.platform));
+  const pt = selected.length ? selected[0].dataset.platform : 'twitter';
+  const ptLabel = pt.charAt(0).toUpperCase() + pt.slice(1,3);
+  const tbody = document.getElementById('schedule-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${content.substring(0,60)}…</td><td><span class="post-platform pt-${pt}">${ptLabel}</span></td><td>${fmt}</td><td><span class="post-status status-scheduled">Scheduled</span></td><td><button class="btn btn-secondary btn-sm">Edit</button></td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+  alert('Post scheduled successfully!');
+  postContent.value = ''; charUsed.textContent = 0;
+  previewBody.textContent = 'Your post preview will appear here as you type...';
+});
+
+document.getElementById('save-draft-btn').addEventListener('click', () => {
+  const content = postContent.value.trim();
+  if (!content) { alert('Please enter post content.'); return; }
+  const tbody = document.getElementById('schedule-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${content.substring(0,60)}…</td><td><span class="post-platform pt-twitter">TW</span></td><td>Not set</td><td><span class="post-status status-draft">Draft</span></td><td><button class="btn btn-secondary btn-sm">Edit</button></td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+  alert('Draft saved!');
+});
+
+// ── Settings tabs ──
+document.querySelectorAll('.settings-nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('[id^="settings-"]').forEach(s => s.style.display = 'none');
+    const el = document.getElementById('settings-' + item.dataset.tab);
+    if (el) el.style.display = 'flex';
+  });
+});
+
+// ── Toggles ──
+document.querySelectorAll('.toggle').forEach(tog => {
+  tog.addEventListener('click', () => tog.classList.toggle('on'));
+});
+
+// ── Bar Chart ──
+function renderChart() {
+  const chart = document.getElementById('engagement-chart');
+  chart.innerHTML = '';
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals = [62, 45, 88, 54, 72, 95, 68];
+  const max  = Math.max(...vals);
+  days.forEach((d, i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-chart-col';
+    const h = Math.round((vals[i] / max) * 130);
+    col.innerHTML = `<div class="bar-chart-bar" style="height:${h}px;opacity:${0.5+i*0.07}"></div><div class="bar-chart-label">${d}</div>`;
+    chart.appendChild(col);
+  });
+}
+
+// ── AI Chat ──
+const chatMessages = document.getElementById('chat-messages');
+const chatInput    = document.getElementById('chat-input');
+const chatSendBtn  = document.getElementById('chat-send-btn');
+
+const aiResponses = {
+  hashtag:  ['Here are 10 powerful hashtags for your content:\n#Innovation #TechTrends #StartupCommunity #GrowWithUs #ContentMarketing #SocialMediaTips #DigitalGrowth #AudienceFirst #BrandBuilding #MarketingStrategy'],
+  calendar: ['📅 7-Day Content Calendar:\n\nMon: Motivational Monday — share a team win\nTue: Product tip or feature spotlight\nWed: User-generated content or testimonial\nThu: Industry news or hot take\nFri: Behind-the-scenes Friday\nSat: Engagement question for followers\nSun: Weekend inspiration or sneak peek'],
+  time:     ['📊 Best times to post based on your audience:\n\nTwitter: Tue/Thu 9–10 AM & 5–6 PM\nInstagram: Wed 7–9 PM & Fri 12–1 PM\nLinkedIn: Mon–Wed 8–10 AM\nFacebook: Thu–Sun 1–3 PM\n\nYour audience is most active mid-week.'],
+  instagram:['📸 Instagram Post:\n\n✨ Behind every great product is an even greater team. Meet the people making it happen — passionate, driven, always innovating. 💡\n\n#TeamGoals #BehindTheScenes #StartupLife #Innovation #BuildingTheFuture'],
+  linkedin: ['💼 LinkedIn Post:\n\nAfter months of hard work, I\'m thrilled to share something we\'ve been quietly building. A product born from real pain points, designed with your workflow in mind.\n\nThe best products come from listening. We listened — and now we\'re ready. 🚀\n\n#Entrepreneurship #ProductLaunch #Leadership #StartupJourney'],
+  default:  [
+    '🚀 Here\'s a suggested post:\n\nExciting things are happening! Stay tuned for a major update that will change how you work. #Excited #ComingSoon',
+    '📈 Based on your data, I recommend posting between 9–11 AM and 7–9 PM on weekdays. Instagram peaks on Wednesday evenings, Twitter peaks on Tuesday mornings.',
+    '🎯 Your top performing content type is video reels — 3.2x the engagement of static posts. Increase video content to at least 40% of your schedule.',
+  ]
+};
+
+function getAIResponse(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('hashtag'))                    return aiResponses.hashtag[0];
+  if (m.includes('calendar')||m.includes('schedule')) return aiResponses.calendar[0];
+  if (m.includes('time')||m.includes('when')||m.includes('best')) return aiResponses.time[0];
+  if (m.includes('instagram')||m.includes('ig')) return aiResponses.instagram[0];
+  if (m.includes('linkedin')||m.includes('professional')) return aiResponses.linkedin[0];
+  return aiResponses.default[Math.floor(Math.random() * aiResponses.default.length)];
+}
+
+function appendMsg(text, role) {
+  const div    = document.createElement('div');
+  div.className = 'msg ' + role;
+  const av     = document.createElement('div');
+  av.className  = 'msg-avatar ' + (role === 'agent' ? 'agent-av' : 'user-av');
+  av.textContent = role === 'agent' ? 'AI' : 'Me';
+  const bubble  = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.style.whiteSpace = 'pre-line';
+  bubble.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  div.appendChild(av);
+  div.appendChild(bubble);
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendMessage(text) {
+  if (!text.trim()) return;
+  appendMsg(text, 'user');
+  chatInput.value = '';
+  const typing = document.createElement('div');
+  typing.className = 'msg agent';
+  typing.id = 'typing';
+  typing.innerHTML = '<div class="msg-avatar agent-av">AI</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  chatMessages.appendChild(typing);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  setTimeout(() => {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+    appendMsg(getAIResponse(text), 'agent');
+  }, 900 + Math.random() * 600);
+}
+
+chatSendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(chatInput.value); });
+
+document.querySelectorAll('.tool-item').forEach(tool => {
+  tool.addEventListener('click', () => {
+    document.querySelector('[data-panel="agent"]').click();
+    setTimeout(() => sendMessage(tool.dataset.msg), 150);
+  });
+});
+</script>
+</body>
+</html>
